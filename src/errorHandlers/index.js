@@ -24,6 +24,20 @@ export const forbiddenHandler = (err, req, res, next) => {
   }
 };
 
+
+export const notFoundHandler = (err, req, res, next) => {
+  if (err.status === 404) {
+    res
+      .status(404)
+      .send({
+        status: "error",
+        message: err.message || "Not found",
+      });
+  } else {
+    next(err);
+  }
+}
+
 export const catchAllHandler = (err, req, res, next) => {
   res
     .status(500)

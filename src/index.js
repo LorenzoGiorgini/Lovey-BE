@@ -3,11 +3,14 @@ import cors from "cors";
 import expressListEndpoints from "express-list-endpoints";
 import mongoose from "mongoose";
 
+
 import {
   unauthorizedHandler,
   forbiddenHandler,
-  catchAllHandler,
+  notFoundHandler,
+  catchAllHandler
 } from "./errorHandlers/index.js";
+import UsersRouter from "./routes/users/users.js";
 
 const app = express();
 const port = process.env.PORT || 3030;
@@ -17,11 +20,12 @@ app.use(express.json());
 app.use(cors());
 
 //Routes
+app.use("/users", UsersRouter)
 
 //Error handlers
-
 app.use(unauthorizedHandler)
 app.use(forbiddenHandler)
+app.use(notFoundHandler)
 app.use(catchAllHandler)
 
 

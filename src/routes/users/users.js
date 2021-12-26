@@ -29,3 +29,5 @@ router.route("/:id")
     .delete((req, res) => {
 
     })
+
+export default router;

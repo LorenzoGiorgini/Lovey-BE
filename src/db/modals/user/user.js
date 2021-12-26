@@ -52,6 +52,9 @@ const userSchema = new Schema(
         return !this.password;
       },
     },
+    refreshToken: {
+      type: String
+    },
     accountType: {
       type: String,
       default: function () {
