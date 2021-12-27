@@ -72,6 +72,7 @@ const userSchema = new Schema(
   }
 );
 
+
 userSchema.pre("save", async function (next) {
   const newUser = this;
 
@@ -84,6 +85,7 @@ userSchema.pre("save", async function (next) {
   }
   next();
 });
+
 
 userSchema.pre("update", async function (next) {
   const password = this.getUpdate().$set.password;
@@ -98,6 +100,7 @@ userSchema.pre("update", async function (next) {
     return next(error);
   }
 });
+
 
 // this function is called automatically by express EVERY TIME it does res.send()
 userSchema.methods.toJSON = function () {
@@ -127,5 +130,7 @@ userSchema.statics.checkCredentials = async function (email, password) {
     return null;
   }
 };
+
+
 
 export default model("User", userSchema);

@@ -1,7 +1,7 @@
 import express from "express";
 import createError from "http-errors";
 import userSchema from "../../db/modals/user/user.js";
-import { JWTauth } from "../../auth/jwt/tools.js";
+import { JWTauth, verifyRefreshToken } from "../../auth/jwt/tools.js";
 import { JWTAuthMiddleware } from "../../auth/jwt/auth.js";
 import passport from "passport";
 
@@ -47,16 +47,22 @@ router.route("/register").post(async (req, res, next) => {
 
 router
   .route("/me")
-  .get(JWTAuthMiddleware, async (req, res,next) => {
+  .get(JWTAuthMiddleware, async (req, res, next) => {
     try {
       res.status(200).send({ success: true, data: req.user });
     } catch (error) {
-        next(error);
+      next(error);
     }
   })
   .put(JWTAuthMiddleware, async (req, res, next) => {
     try {
-      
+      if (req.user.accountType === "Google") {
+        delete req.body.password;
+        delete req.body.email;
+        delete req.body.accountType;
+      }
+
+      const user = await req.user.update(req.body);
 
       res.status(203).send({ success: true, data: user });
     } catch (error) {
@@ -69,24 +75,43 @@ router
 
       res.status(204).send({ success: true, message: "User Deleted" });
     } catch (error) {
-        next(error);
+      next(error);
     }
   });
 
-router.route("/logout").post(async (req, res, next) => {
-  try {
-  } catch (error) {
-    next(error);
-  }
-});
+router.route("/logout")
+    .post(JWTAuthMiddleware , async (req, res, next) => {
+        try {
+            //verify refresh token
+            const refreshToken = req.cookies.refreshToken;
+
+            const tokens = await verifyRefreshToken(refreshToken);
+
+            if(!refreshToken){
+                next(createError(401, "No refresh token found"));
+            }
+            if(tokens){
+                //delete refreshToken from db
+                await req.user.update({refreshToken: ""});
+                res.clearCookie('accessToken');
+                res.clearCookie('refreshToken');
+                res.status(200).send({success: true, message: "Logged out"});
+                res.redirect('/');
+            } else {
+                next(createError(401, "Invalid refresh token"));
+            }
+        } catch (error) {
+            next(error);
+        }
+    });
+
+
 
 router.route("/refreshToken").post(async (req, res, next) => {
   try {
-    const { currentRefreshToken } = req.body;
+    const currentRefreshToken = req.cookies.refreshToken;
 
-    const { accessToken, refreshToken } = await verifyRefreshToken(
-      currentRefreshToken
-    );
+    const { accessToken, refreshToken } = await verifyRefreshToken(currentRefreshToken);
 
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
@@ -129,5 +154,6 @@ router
       next(error);
     }
   });
+
 
 export default router;
