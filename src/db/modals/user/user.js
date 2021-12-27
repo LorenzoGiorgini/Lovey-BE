@@ -53,7 +53,7 @@ const userSchema = new Schema(
       },
     },
     refreshToken: {
-      type: String
+      type: String,
     },
     accountType: {
       type: String,
@@ -85,6 +85,20 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
+userSchema.pre("update", async function (next) {
+  const password = this.getUpdate().$set.password;
+  if (!password) {
+    return next();
+  }
+  try {
+    const hash = await bcrypt.hash(password, 10);
+    this.getUpdate().$set.password = hash;
+    next();
+  } catch (error) {
+    return next(error);
+  }
+});
+
 // this function is called automatically by express EVERY TIME it does res.send()
 userSchema.methods.toJSON = function () {
   const userDocument = this;
@@ -97,7 +111,6 @@ userSchema.methods.toJSON = function () {
 
   return user;
 };
-
 
 userSchema.statics.checkCredentials = async function (email, password) {
   const user = await this.findOne({ email });
@@ -114,7 +127,5 @@ userSchema.statics.checkCredentials = async function (email, password) {
     return null;
   }
 };
-
-
 
 export default model("User", userSchema);
