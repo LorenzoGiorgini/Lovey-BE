@@ -71,7 +71,7 @@ router
   })
   .delete(JWTAuthMiddleware, async (req, res, next) => {
     try {
-      await req.user.deleteOne();
+      await req.user.delete();
 
       res.status(204).send({ success: true, message: "User Deleted" });
     } catch (error) {
@@ -79,39 +79,37 @@ router
     }
   });
 
-router.route("/logout")
-    .post(JWTAuthMiddleware , async (req, res, next) => {
-        try {
-            //verify refresh token
-            const refreshToken = req.cookies.refreshToken;
+router.route("/logout").post(JWTAuthMiddleware, async (req, res, next) => {
+  try {
+    //verify refresh token
+    const refreshToken = req.cookies.refreshToken;
 
-            const tokens = await verifyRefreshToken(refreshToken);
+    const tokens = await verifyRefreshToken(refreshToken);
 
-            if(!refreshToken){
-                next(createError(401, "No refresh token found"));
-            }
-            if(tokens){
-                //delete refreshToken from db
-                await req.user.update({refreshToken: ""});
-                res.clearCookie('accessToken');
-                res.clearCookie('refreshToken');
-                res.status(200).send({success: true, message: "Logged out"});
-                res.redirect('/');
-            } else {
-                next(createError(401, "Invalid refresh token"));
-            }
-        } catch (error) {
-            next(error);
-        }
-    });
-
-
+    if (!refreshToken) {
+      next(createError(401, "No refresh token found"));
+    }
+    if (tokens) {
+      //delete refreshToken from db
+      await req.user.update({ refreshToken: "" });
+      res.clearCookie("accessToken");
+      res.clearCookie("refreshToken");
+      res.redirect("/");
+    } else {
+      next(createError(401, "Invalid refresh token"));
+    }
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.route("/refreshToken").post(async (req, res, next) => {
   try {
     const currentRefreshToken = req.cookies.refreshToken;
 
-    const { accessToken, refreshToken } = await verifyRefreshToken(currentRefreshToken);
+    const { accessToken, refreshToken } = await verifyRefreshToken(
+      currentRefreshToken
+    );
 
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
@@ -129,6 +127,7 @@ router.route("/refreshToken").post(async (req, res, next) => {
   }
 });
 
+
 router
   .route("/googleLogin")
   .get(passport.authenticate("google", { scope: ["profile", "email"] }));
@@ -137,19 +136,38 @@ router
   .route("/googleRedirect")
   .get(passport.authenticate("google"), async (req, res, next) => {
     try {
-      res.cookie("accessToken", req.user.tokens.accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production" ? true : false,
-        sameSite: "lax",
-      });
+      if (req.user.exist) {
+        res.cookie("accessToken", req.user.tokens.accessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production" ? true : false,
+          sameSite: "lax",
+        });
 
-      res.cookie("refreshToken", req.user.tokens.refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production" ? true : false,
-        sameSite: "lax",
-      });
+        res.cookie("refreshToken", req.user.tokens.refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production" ? true : false,
+          sameSite: "lax",
+        });
 
-      res.redirect(`${process.env.FE_URL}`);
+        res.redirect(`${process.env.FE_URL}`);
+      } else {
+        
+        const googleUser = {
+          id: req.user.profile.id,
+          email: req.user.profile.emails[0].value,
+          accountType: "Google",
+          exist: false
+        }
+  
+
+        res.cookie("acc", googleUser, {
+          maxAge: 1 * 60 * 60 * 1000,
+          secure: process.env.NODE_ENV === "production" ? true : false,
+          sameSite: "lax",
+        });
+
+        res.redirect(`${process.env.FE_URL_SIGNIN}`);
+      }
     } catch (error) {
       next(error);
     }

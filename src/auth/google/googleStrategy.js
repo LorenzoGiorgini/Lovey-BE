@@ -15,19 +15,22 @@ const googleStrategy = new GoogleStrategy(
 
       if (user) {
         const tokens = await JWTauth(user);
+        const exist = true
 
-        passportNext(null, { tokens });
+        passportNext(null, { tokens, exist });
       } else {
-        const newUser = new userSchema({
+        /* const newUser = new userSchema({
           firstName: profile.name.givenName,
           lastName: profile.name.familyName,
           email: profile.emails[0].value,
-          googleId: profile.id,
+          googleId: profile.id
         });
 
-        const tokens = await JWTauth(newUser);
+        const tokens = await JWTauth(newUser); */
 
-        passportNext(null, { tokens });
+        const exist = false;
+
+        passportNext(null, {profile, exist});
       }
     } catch (error) {
       passportNext(error);

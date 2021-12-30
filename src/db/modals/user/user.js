@@ -24,16 +24,17 @@ const userSchema = new Schema(
     gender: {
       type: String,
       required: true,
-      enum: ["Male", "Female"],
+      enum: ["Man", "Woman"],
     },
     preferences: {
       type: String,
       required: true,
-      enum: ["Male", "Female", "Both"],
+      enum: ["Men", "Woman", "Everyone"],
     },
     passions: {
       type: mongoose.Types.ObjectId,
       ref: "Passions",
+      required: false
     },
     email: {
       type: String,
